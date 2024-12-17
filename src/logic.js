@@ -1,5 +1,7 @@
 // TODO Split up methods in Gameboard class so they're not all in one Class
 
+// This is DEV BRANCH
+
 export class Ship {
   constructor(coordsArray, shipLength) {
     this.coordsArray = coordsArray; // A 2D array, each inside array being a coordinate
