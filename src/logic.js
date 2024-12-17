@@ -1,4 +1,4 @@
-// TODO Logic works great; need to implement a CPU
+// TODO Split up methods in Gameboard class so they're not all in one Class
 
 export class Ship {
   constructor(coordsArray, shipLength) {
@@ -12,13 +12,13 @@ export class Ship {
   }
 
   hasSunk() {
-    console.log(`Ship hits: ${this.hitCount}, Length: ${this.coordsArray.length}`);
     return (this.coordsArray.length == this.hitCount);
   }
 }
 
 export class Gameboard {
   constructor() {
+    this.otherPlayer;
     this.ships = [];  // Array holding each Ship
     this.hits = [];  // Array holding all hit shots
     this.missed = [];   // Array holding all missed shots
@@ -108,7 +108,7 @@ export class Gameboard {
    * of hit coordinates and adds a count to the ships number of hits.
    * @param {Array} coord
    */
-  receiveAttack(coord, cell, player) {
+  receiveAttack(coord, cell, otherPlayer) {
     let found = false;
 
     for (let ship of this.ships) {
@@ -118,10 +118,7 @@ export class Gameboard {
           ship.hit();
           cell.classList.add('hit');
           found = true;
-
-          if (ship.coordsArray.length == ship.hitCount)
-            console.log('sunk!')
-
+        
           break;
         }
       }
@@ -134,7 +131,7 @@ export class Gameboard {
       cell.classList.add('miss');
     }
 
-    player.render();
+    otherPlayer.render();
 
     if (this.isGameOver()) {
       console.log('game over!')
@@ -193,18 +190,11 @@ export class Gameboard {
   getRndInteger(min, max) {
     return Math.floor(Math.random() * (max - min) ) + min;
   }
-}
 
-export class Player {
-  constructor(playerName) {
-    this.playerName = playerName;
-    this.board = new Gameboard();
-  }
 
-  
   /**
    * Displays a player's board, accounting for hits, misses, and ships.
-   */
+  */
   render() {
     const boardDOM = document.getElementById('board');
     boardDOM.innerHTML = "";
@@ -217,30 +207,30 @@ export class Player {
         cell.classList.add('cell')
         cell.id = j;
 
-        if (this.board.isShip([i, j]))
-          for (let ship of this.board.ships)
+        if (this.isShip([i, j]))
+          for (let ship of this.ships)
             for (let coord of ship.coordsArray)
               if ((coord[0] == row.id) && (coord[1] == cell.id)) {
                 cell.classList.add('ship');
               }
 
-        if (this.board.isHit([i, j]))
-          for (let hit of this.board.hits)
+        if (this.isHit([i, j]))
+          for (let hit of this.hits)
             if ((hit[0] == row.id) && (hit[1]) == cell.id) {
               cell.classList.add('hit');
               break
             }
 
-        if (this.board.isMiss([i, j])) {
-          for (let miss of this.board.missed)
+        if (this.isMiss([i, j])) {
+          for (let miss of this.missed)
             if ((miss[0] == row.id) && (miss[1] == cell.id)) {
               cell.classList.add('miss');
               break
             }
         }
 
-        if (!this.board.isHit([i, j]) && !this.board.isMiss([i, j]))
-          cell.addEventListener('click', () => (this.board.receiveAttack([i, j], cell, this)));
+        if (!this.isHit([i, j]) && !this.isMiss([i, j]))
+          cell.addEventListener('click', () => (this.receiveAttack([i, j], cell, this.otherPlayer)));
         
         row.appendChild(cell);
       }
@@ -249,9 +239,38 @@ export class Player {
   }
 }
 
+export class Player {
+  constructor(playerName) {
+    this.playerName = playerName;
+  }
+}
+
+export class CPU extends Player {
+  
+}
+
 export class Viewport {
   constructor() {
-    this.player1 = new Player();
-    this.player2 = new Player();
+    this.player1 = new Gameboard();
+    this.player2 = new Gameboard();
+    // this.activePlayer = player1;
   }
+
+  init() {
+    this.player1.playerName = "Phil";
+    this.player2.playerName = "George";
+
+    this.player1.otherPlayer = this.player2;
+    this.player2.otherPlayer = this.player1;
+
+    this.player1.generateBoard();
+    this.player2.generateBoard();
+
+    this.player1.render();
+
+    const renderStartMenu = () => {
+
+    }
+  }
+
 }

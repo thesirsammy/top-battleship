@@ -19,16 +19,27 @@ body {
   gap: 20px;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .board {
   display: flex;
   flex-direction: row;
-  border: 1px solid var(--board);
 }
+
+
 
 .cell {
   height:40px;
   width: 40px;
-  border: 1px solid var(--board);
+  border: 1.5px solid var(--board);
+  animation: fadeIn 0.5s ease-out;
 }
 
 .ship {
