@@ -1,21 +1,19 @@
-//TODO Why the bum is this not registering when I sink a ship
+// TODO Logic works great; need to implement a CPU
 
 export class Ship {
   constructor(coordsArray, shipLength) {
     this.coordsArray = coordsArray; // A 2D array, each inside array being a coordinate
     this.shipLength = shipLength; 
     this.hitCount = 0;
-    this.hasSunk = false;
   }
 
   hit() {
-    console.log(this.hitCount)
-    console.log(this.coordsArray.length-1)
-    this.hitCount++;
+    this.hitCount = this.hitCount+1;
   }
 
-  isSunk() {
-    return (this.coordsArray.length-1 == this.hitCount);
+  hasSunk() {
+    console.log(`Ship hits: ${this.hitCount}, Length: ${this.coordsArray.length}`);
+    return (this.coordsArray.length == this.hitCount);
   }
 }
 
@@ -111,30 +109,47 @@ export class Gameboard {
    * @param {Array} coord
    */
   receiveAttack(coord, cell, player) {
-    console.log('Attact')
-    for (let ship of this.ships)
-      for (let shipCoord of ship.coordsArray)
+    let found = false;
+
+    for (let ship of this.ships) {
+      for (let shipCoord of ship.coordsArray) {
         if (JSON.stringify(coord) === JSON.stringify(shipCoord)) {
           this.hits.push(coord);
           ship.hit();
           cell.classList.add('hit');
+          found = true;
 
-          if (ship.isSunk())
-            ship.hasSunk = true;
+          if (ship.coordsArray.length == ship.hitCount)
+            console.log('sunk!')
 
-          return;
-        } else this.missed.push(coord);
+          break;
+        }
+      }
+
+      if (found) break;
+    }
+
+    if (!found) {
+      this.missed.push(coord);
+      cell.classList.add('miss');
+    }
+
     player.render();
+
+    if (this.isGameOver()) {
+      console.log('game over!')
+    }
   }
 
   isGameOver() {
-    for (let ship of this.ships) {
-      if (!ship.hasSunk) {
+    for (let ship of this.ships)
+      if (!ship.hasSunk()) {
+        console.log('not over');
         return false;
       }
-    }
-    console.log('sunk')
-    return true;
+
+    console.log('game over!')
+    return false;
   }
 
   /**
@@ -147,7 +162,7 @@ export class Gameboard {
     for (let hit of this.hits)
       if (JSON.stringify(hit) === JSON.stringify(coord))
         isHit = true;
-    
+
     return isHit;
   }
 
@@ -191,10 +206,6 @@ export class Player {
    * Displays a player's board, accounting for hits, misses, and ships.
    */
   render() {
-    if (this.board.isGameOver()) {
-      console.log('game over!')
-    }
-
     const boardDOM = document.getElementById('board');
     boardDOM.innerHTML = "";
     for (let i = 0; i < 10; i++) {
