@@ -1,6 +1,4 @@
-// TODO Split up methods in Gameboard class so they're not all in one Class
-
-// This is DEV BRANCH
+// ! Overall, pretty broken and probably need to start over.
 
 export class Ship {
   constructor(coordsArray, shipLength) {
@@ -106,52 +104,6 @@ export class Gameboard {
   }
 
   /**
-   * If input coordinate matches a coordinate of a ship, adds it to the list
-   * of hit coordinates and adds a count to the ships number of hits.
-   * @param {Array} coord
-   */
-  receiveAttack(coord, cell, otherPlayer) {
-    let found = false;
-
-    for (let ship of this.ships) {
-      for (let shipCoord of ship.coordsArray) {
-        if (JSON.stringify(coord) === JSON.stringify(shipCoord)) {
-          this.hits.push(coord);
-          ship.hit();
-          cell.classList.add('hit');
-          found = true;
-        
-          break;
-        }
-      }
-
-      if (found) break;
-    }
-
-    if (!found) {
-      this.missed.push(coord);
-      cell.classList.add('miss');
-    }
-
-    otherPlayer.render();
-
-    if (this.isGameOver()) {
-      console.log('game over!')
-    }
-  }
-
-  isGameOver() {
-    for (let ship of this.ships)
-      if (!ship.hasSunk()) {
-        console.log('not over');
-        return false;
-      }
-
-    console.log('game over!')
-    return false;
-  }
-
-  /**
    * Returns whether or not given coordinate is already a hit.
    * @param {Array} coord
    * @returns {Boolean}
@@ -195,10 +147,54 @@ export class Gameboard {
 
 
   /**
+  * If input coordinate matches a coordinate of a ship, adds it to the list
+  * of hit coordinates and adds a count to the ships number of hits.
+  * @param {Array} coord
+  */
+  receiveAttack(coord, cell, otherPlayer) {
+    let found = false;
+  
+    for (let ship of this.ships) {
+      for (let shipCoord of ship.coordsArray) {
+        if (JSON.stringify(coord) === JSON.stringify(shipCoord)) {
+          this.hits.push(coord);
+          ship.hit();
+          found = true;
+          
+          break;
+        }
+      }
+      if (found) break;
+    }
+  
+    if (!found) {
+      this.missed.push(coord);
+
+    }
+  
+    if (this.isGameOver()) {
+      console.log('game over!')
+    }
+  }
+ 
+  isGameOver() {
+    return this.ships.every(ship => ship.hasSunk());
+  }
+}
+
+export class Player {
+  constructor(playerName, playerID, isActive) {
+    this.playerName = playerName;
+    this.playerID = playerID;
+    this.isActive = isActive;
+    this.board = new Gameboard();
+  }
+
+  /**
    * Displays a player's board, accounting for hits, misses, and ships.
   */
   render() {
-    const boardDOM = document.getElementById('board');
+    const boardDOM = document.getElementById(`board${this.playerID}`);
     boardDOM.innerHTML = "";
     for (let i = 0; i < 10; i++) {
       const row = document.createElement('div');
@@ -209,30 +205,40 @@ export class Gameboard {
         cell.classList.add('cell')
         cell.id = j;
 
-        if (this.isShip([i, j]))
-          for (let ship of this.ships)
+        if (this.board.isShip([i, j]))
+          for (let ship of this.board.ships)
             for (let coord of ship.coordsArray)
               if ((coord[0] == row.id) && (coord[1] == cell.id)) {
                 cell.classList.add('ship');
               }
 
-        if (this.isHit([i, j]))
-          for (let hit of this.hits)
+        if (this.board.isHit([i, j]))
+          for (let hit of this.board.hits)
             if ((hit[0] == row.id) && (hit[1]) == cell.id) {
               cell.classList.add('hit');
               break
             }
 
-        if (this.isMiss([i, j])) {
-          for (let miss of this.missed)
+        if (this.board.isMiss([i, j])) {
+          for (let miss of this.board.missed)
             if ((miss[0] == row.id) && (miss[1] == cell.id)) {
               cell.classList.add('miss');
               break
             }
         }
+        
+        if(this.isActive) {
+          if (!this.board.isHit([i, j]) && !this.board.isMiss([i, j])) {
+            cell.addEventListener('click', () => {
+              this.isActive = !this.isActive;
+              this.otherPlayer.isActive = !this.otherPlayer.isActive;
 
-        if (!this.isHit([i, j]) && !this.isMiss([i, j]))
-          cell.addEventListener('click', () => (this.receiveAttack([i, j], cell, this.otherPlayer)));
+              this.board.receiveAttack([i, j], cell, this.otherPlayer);
+              this.render(this.playerID)
+              this.otherPlayer.render(this.otherPlayer.playerID)
+            });
+          }
+        }
         
         row.appendChild(cell);
       }
@@ -241,34 +247,41 @@ export class Gameboard {
   }
 }
 
-export class Player {
-  constructor(playerName) {
-    this.playerName = playerName;
-  }
-}
-
 export class CPU extends Player {
-  
+  waitForAttack(i, j, cell) {
+    console.log('hey');
+    this.board.receiveAttack([this.board.getRndInteger(0, 9), this.board.getRndInteger(0, 9)], cell);
+    this.otherPlayer.render();
+  }
+
+  selectCoord() {
+    const randCoord = [this.board.getRndInteger(0, 9), this.board.getRndInteger(0, 9),]
+    console.log(randCoord);
+
+    this.otherPlayer.board.receiveAttack(randCoord);
+  }
 }
 
 export class Viewport {
   constructor() {
-    this.player1 = new Gameboard();
-    this.player2 = new Gameboard();
-    // this.activePlayer = player1;
+  }
+
+  initCPU() {
+
   }
 
   init() {
-    this.player1.playerName = "Phil";
-    this.player2.playerName = "George";
+    const player1 = new Player('Phil', 0, false);
+    const player2 = new Player('Jones', 1, true);
 
-    this.player1.otherPlayer = this.player2;
-    this.player2.otherPlayer = this.player1;
+    player1.otherPlayer = player2;
+    player2.otherPlayer = player1;
 
-    this.player1.generateBoard();
-    this.player2.generateBoard();
+    player1.board.generateBoard();
+    player2.board.generateBoard();
 
-    this.player1.render();
+    player1.render(0);
+    player2.render(1)
 
     const renderStartMenu = () => {
 
